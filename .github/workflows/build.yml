@@ -9,15 +9,14 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: pspdev/pspdev:latest
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Build PSP Executable
+    - name: Build PSP Executable using Docker
       run: |
-        make
+        docker run --rm -v ${{ github.workspace }}:/src -w /src pspdev/pspdev:latest make
 
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v4
