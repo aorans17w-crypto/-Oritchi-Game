@@ -35,6 +35,34 @@ static Vertex playerVertices[4] = {
 
 void drawMenu(int selected)
 {
+    pspDebugScreenClear();
+
+    pspDebugScreenSetXY(15, 4);
+    pspDebugScreenPrintf("ORITCHI GAME");
+
+    pspDebugScreenSetXY(15, 9);
+
+    if (selected == 0)
+        pspDebugScreenPrintf("> NEW GAME");
+    else
+        pspDebugScreenPrintf("  NEW GAME");
+
+    pspDebugScreenSetXY(15, 11);
+
+    if (selected == 1)
+        pspDebugScreenPrintf("> EXIT");
+    else
+        pspDebugScreenPrintf("  EXIT");
+
+    pspDebugScreenSetXY(15, 17);
+    pspDebugScreenPrintf("UP / DOWN : SELECT");
+
+    pspDebugScreenSetXY(15, 18);
+    pspDebugScreenPrintf("X : CONFIRM");
+
+    sceDisplayWaitVblankStart();
+}
+{
     sceGuStart(GU_DIRECT, list);
 
     sceGuClearColor(0xFF101018);
