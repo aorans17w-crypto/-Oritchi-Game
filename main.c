@@ -62,7 +62,6 @@ void drawMenu(int selected)
 
     sceDisplayWaitVblankStart();
 }
-{
     sceGuStart(GU_DIRECT, list);
 
     sceGuClearColor(0xFF101018);
