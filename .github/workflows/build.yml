@@ -1,24 +1,20 @@
 name: Build PSP Game
 
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+on: [push, pull_request]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-    - name: Build PSP Executable using Docker
-      run: |
-        docker run --rm -v ${{ github.workspace }}:/src -w /src pspdev/pspdev:latest make
+    - name: Setup PSPDev Toolchain
+      uses: pspdev/setup-pspdev@v1
 
-    - name: Upload Build Artifacts
+    - name: Build Game
+      run: make
+
+    - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: OritchiGame-PSP
