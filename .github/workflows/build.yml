@@ -8,26 +8,31 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    container:
+      image: pspdev/pspdev:latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup PSPDev Toolchain
-        uses: pspdev/setup-pspdev@v1
+      - name: Check PSPDev
+        run: |
+          echo "PSPDEV=$PSPDEV"
+          which psp-gcc
+          psp-gcc --version
 
       - name: Build Game
         run: make
 
-      - name: Check Build Output
+      - name: Find EBOOT
         run: |
-          echo "=== Build files ==="
-          find . -type f \( -name "EBOOT.PBP" -o -name "PARAM.SFO" \) -print
+          echo "Searching for EBOOT.PBP..."
+          find . -type f -name "EBOOT.PBP" -print
 
-      - name: Upload Artifact
+      - name: Upload PSP Game
         uses: actions/upload-artifact@v4
         with:
           name: OritchiGame-PSP
           path: |
             **/EBOOT.PBP
-            **/PARAM.SFO
           if-no-files-found: error
