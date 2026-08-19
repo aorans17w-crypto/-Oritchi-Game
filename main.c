@@ -1,6 +1,5 @@
 #include <pspkernel.h>
 #include <pspdisplay.h>
-#include <pspdebug.h>
 #include <pspctrl.h>
 #include <pspgu.h>
 #include <pspgum.h>
@@ -14,14 +13,176 @@ PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
 
 static unsigned int __attribute__((aligned(16))) list[262144];
 
+typedef struct {
+    float x;
+    float y;
+    float z;
+} Vertex;
+
+static Vertex floorVertices[4] = {
+    {-5.0f, 0.0f, -5.0f},
+    { 5.0f, 0.0f, -5.0f},
+    {-5.0f, 0.0f,  5.0f},
+    { 5.0f, 0.0f,  5.0f}
+};
+
+static Vertex playerVertices[4] = {
+    {-0.4f, 0.0f, 0.0f},
+    { 0.4f, 0.0f, 0.0f},
+    {-0.4f, 1.0f, 0.0f},
+    { 0.4f, 1.0f, 0.0f}
+};
+
+void drawMenu(int selected)
+{
+    sceGuStart(GU_DIRECT, list);
+
+    sceGuClearColor(0xFF101018);
+    sceGuClear(GU_COLOR_BUFFER_BIT);
+
+    sceGuFinish();
+    sceGuSync(0, 0);
+
+    /*
+     * نستخدم debug screen فوق الخلفية
+     */
+    pspDebugScreenSetXY(15, 4);
+    pspDebugScreenPrintf("ORITCHI GAME");
+
+    pspDebugScreenSetXY(15, 9);
+
+    if (selected == 0)
+        pspDebugScreenPrintf("> NEW GAME");
+    else
+        pspDebugScreenPrintf("  NEW GAME");
+
+    pspDebugScreenSetXY(15, 11);
+
+    if (selected == 1)
+        pspDebugScreenPrintf("> EXIT");
+    else
+        pspDebugScreenPrintf("  EXIT");
+
+    pspDebugScreenSetXY(15, 17);
+    pspDebugScreenPrintf("UP / DOWN : SELECT");
+
+    pspDebugScreenSetXY(15, 18);
+    pspDebugScreenPrintf("X : CONFIRM");
+}
+
+void drawGame(float playerX, float playerZ)
+{
+    sceGuStart(GU_DIRECT, list);
+
+    sceGuClearColor(0xFF202020);
+    sceGuClearDepth(0);
+    sceGuClear(
+        GU_COLOR_BUFFER_BIT |
+        GU_DEPTH_BUFFER_BIT
+    );
+
+    sceGumMatrixMode(GU_PROJECTION);
+    sceGumLoadIdentity();
+
+    sceGumPerspective(
+        60.0f,
+        16.0f / 9.0f,
+        0.5f,
+        100.0f
+    );
+
+    sceGumMatrixMode(GU_VIEW);
+    sceGumLoadIdentity();
+
+    ScePspFVector3 camera = {
+        0.0f,
+        3.0f,
+        -6.0f
+    };
+
+    ScePspFVector3 target = {
+        0.0f,
+        0.0f,
+        0.0f
+    };
+
+    ScePspFVector3 up = {
+        0.0f,
+        1.0f,
+        0.0f
+    };
+
+    sceGumLookAt(
+        &camera,
+        &target,
+        &up
+    );
+
+    sceGumMatrixMode(GU_MODEL);
+    sceGumLoadIdentity();
+
+    /*
+     * الأرضية
+     */
+
+    sceGuColor(0xFF406040);
+    sceGuDisable(GU_TEXTURE_2D);
+
+    sceGumDrawArray(
+        GU_TRIANGLE_STRIP,
+        GU_VERTEX_32BITF | GU_TRANSFORM_3D,
+        4,
+        0,
+        floorVertices
+    );
+
+    /*
+     * اللاعب
+     */
+
+    sceGumPushMatrix();
+
+    ScePspFVector3 player = {
+        playerX,
+        0.0f,
+        playerZ
+    };
+
+    sceGumTranslate(&player);
+
+    sceGuColor(0xFFCCAA66);
+
+    sceGumDrawArray(
+        GU_TRIANGLE_STRIP,
+        GU_VERTEX_32BITF | GU_TRANSFORM_3D,
+        4,
+        0,
+        playerVertices
+    );
+
+    sceGumPopMatrix();
+
+    sceGuFinish();
+    sceGuSync(0, 0);
+
+    sceDisplayWaitVblankStart();
+    sceGuSwapBuffers();
+}
+
 int main(void)
 {
     SceCtrlData pad;
 
+    int selected = 0;
+    int gameStarted = 0;
+
+    float playerX = 0.0f;
+    float playerZ = 0.0f;
+
     pspDebugScreenInit();
 
     sceCtrlSetSamplingCycle(0);
-    sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);
+    sceCtrlSetSamplingMode(PSP_CTRL_MODE_DIGITAL);
 
     sceGuInit();
 
@@ -80,156 +241,75 @@ int main(void)
     sceDisplayWaitVblankStart();
     sceGuDisplay(GU_TRUE);
 
-    float playerX = 0.0f;
-    float playerZ = 0.0f;
-
     while (1)
     {
         sceCtrlReadBufferPositive(&pad, 1);
 
-        if (pad.Buttons & PSP_CTRL_START)
+        /*
+         * القائمة الرئيسية
+         */
+
+        if (!gameStarted)
         {
-            break;
+            if (pad.Buttons & PSP_CTRL_UP)
+                selected = 0;
+
+            if (pad.Buttons & PSP_CTRL_DOWN)
+                selected = 1;
+
+            if (pad.Buttons & PSP_CTRL_CROSS)
+            {
+                if (selected == 0)
+                {
+                    gameStarted = 1;
+                    playerX = 0.0f;
+                    playerZ = 0.0f;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            drawMenu(selected);
         }
 
-        if (pad.Buttons & PSP_CTRL_LEFT)
-            playerX -= 0.03f;
-
-        if (pad.Buttons & PSP_CTRL_RIGHT)
-            playerX += 0.03f;
-
-        if (pad.Buttons & PSP_CTRL_UP)
-            playerZ += 0.03f;
-
-        if (pad.Buttons & PSP_CTRL_DOWN)
-            playerZ -= 0.03f;
-
-        sceGuStart(GU_DIRECT, list);
-
-        sceGuClearColor(0xFF202020);
-        sceGuClearDepth(0);
-        sceGuClear(
-            GU_COLOR_BUFFER_BIT |
-            GU_DEPTH_BUFFER_BIT
-        );
-
-        sceGumMatrixMode(GU_PROJECTION);
-        sceGumLoadIdentity();
-
-        sceGumPerspective(
-            60.0f,
-            16.0f / 9.0f,
-            0.5f,
-            100.0f
-        );
-
-        sceGumMatrixMode(GU_VIEW);
-        sceGumLoadIdentity();
-
-        ScePspFVector3 camera = {
-            0.0f,
-            3.0f,
-            -6.0f
-        };
-
-        ScePspFVector3 target = {
-            0.0f,
-            0.0f,
-            0.0f
-        };
-
-        ScePspFVector3 up = {
-            0.0f,
-            1.0f,
-            0.0f
-        };
-
-        sceGumLookAt(
-            &camera,
-            &target,
-            &up
-        );
-
         /*
-         * أرضية
+         * اللعبة
          */
 
-        sceGumMatrixMode(GU_MODEL);
-        sceGumLoadIdentity();
+        else
+        {
+            /*
+             * تم إصلاح اتجاه اليمين واليسار هنا
+             */
 
-        sceGumTranslate(
-            &(ScePspFVector3){0.0f, -1.0f, 0.0f}
-        );
+            if (pad.Buttons & PSP_CTRL_LEFT)
+                playerX += 0.03f;
 
-        sceGuColor(0xFF406040);
+            if (pad.Buttons & PSP_CTRL_RIGHT)
+                playerX -= 0.03f;
 
-        sceGuDisable(GU_TEXTURE_2D);
+            if (pad.Buttons & PSP_CTRL_UP)
+                playerZ += 0.03f;
 
-        /*
-         * مربع أرضي
-         */
+            if (pad.Buttons & PSP_CTRL_DOWN)
+                playerZ -= 0.03f;
 
-        typedef struct {
-            float x;
-            float y;
-            float z;
-        } Vertex;
+            /*
+             * START يرجع إلى القائمة
+             */
 
-        Vertex floorVertices[4] = {
-            {-5.0f, 0.0f, -5.0f},
-            { 5.0f, 0.0f, -5.0f},
-            {-5.0f, 0.0f,  5.0f},
-            { 5.0f, 0.0f,  5.0f}
-        };
+            if (pad.Buttons & PSP_CTRL_START)
+            {
+                gameStarted = 0;
+                selected = 0;
+            }
 
-        sceGumDrawArray(
-            GU_TRIANGLE_STRIP,
-            GU_VERTEX_32BITF |
-            GU_TRANSFORM_3D,
-            4,
-            0,
-            floorVertices
-        );
+            drawGame(playerX, playerZ);
+        }
 
-        /*
-         * اللاعب التجريبي
-         */
-
-        sceGumPushMatrix();
-
-        ScePspFVector3 player = {
-            playerX,
-            0.0f,
-            playerZ
-        };
-
-        sceGumTranslate(&player);
-
-        sceGuColor(0xFFCCAA66);
-
-        Vertex playerVertices[4] = {
-            {-0.4f, 0.0f,  0.0f},
-            { 0.4f, 0.0f,  0.0f},
-            {-0.4f, 1.0f,  0.0f},
-            { 0.4f, 1.0f,  0.0f}
-        };
-
-        sceGumDrawArray(
-            GU_TRIANGLE_STRIP,
-            GU_VERTEX_32BITF |
-            GU_TRANSFORM_3D,
-            4,
-            0,
-            playerVertices
-        );
-
-        sceGumPopMatrix();
-
-        sceGuFinish();
-        sceGuSync(0, 0);
-
-        sceDisplayWaitVblankStart();
-        sceGuSwapBuffers();
+        sceKernelDelayThread(16000);
     }
 
     sceGuTerm();
