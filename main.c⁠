@@ -1,0 +1,53 @@
+#include <pspkernel.h>
+#include <pspdebug.h>
+#include <pspdisplay.h>
+
+/* معلومات الموديول وإعدادات الـ PSP */
+PSP_MODULE_INFO("Oritchi-Game", 0, 1, 0);
+PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
+
+/* دالة الخروج الآمن من اللعبة عند الضغط على زر Home بالمحاكي */
+int exit_callback(int arg1, int arg2, void *common) {
+    sceKernelExitGame();
+    return 0;
+}
+
+int CallbackThread(SceSize args, void *argp) {
+    int cbid = sceKernelCreateCallback("Exit Callback", exit_callback, NULL);
+    sceKernelRegisterExitCallback(cbid);
+    sceKernelSleepThreadCB();
+    return 0;
+}
+
+void SetupCallbacks(void) {
+    int thid = sceKernelCreateThread("update_thread", CallbackThread, 0x11, 0xFA0, 0, 0);
+    if (thid >= 0) {
+        sceKernelStartThread(thid, 0, 0);
+    }
+}
+
+/* الدالة الرئيسية للعبة */
+int main(void) {
+    pspDebugScreenInit();
+    SetupCallbacks();
+
+    while (1) {
+        pspDebugScreenSetXY(0, 0);
+        
+        pspDebugScreenPrintf("=========================================\n");
+        pspDebugScreenPrintf("     CHAPTER 1: A LAST SMILE            \n");
+        pspDebugScreenPrintf("=========================================\n\n");
+        
+        pspDebugScreenPrintf("Father: Oritchi! Saori! You must go!\n");
+        pspDebugScreenPrintf("This man is dangerous... Run!\n\n");
+        
+        pspDebugScreenPrintf("Oritchi: Father... Father!\n\n");
+        pspDebugScreenPrintf("-----------------------------------------\n");
+        pspDebugScreenPrintf("[ PSP Game Engine Loaded Successfully ]\n");
+
+        sceDisplayWaitVblankStart();
+    }
+
+    return 0;
+}
+
