@@ -8,12 +8,12 @@ PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
 int main(void)
 {
     SceCtrlData pad;
+    int selected = 0;
 
     pspDebugScreenInit();
+
     sceCtrlSetSamplingCycle(0);
     sceCtrlSetSamplingMode(PSP_CTRL_MODE_DIGITAL);
-
-    int selected = 0;
 
     while (1)
     {
@@ -38,6 +38,7 @@ int main(void)
 
         pspDebugScreenSetXY(8, 16);
         pspDebugScreenPrintf("UP / DOWN : SELECT");
+
         pspDebugScreenSetXY(8, 17);
         pspDebugScreenPrintf("X : CONFIRM");
 
@@ -73,11 +74,23 @@ int main(void)
                     sceCtrlReadBufferPositive(&pad, 1);
 
                     if (pad.Buttons & PSP_CTRL_TRIANGLE)
+                    {
                         break;
+                    }
 
                     sceKernelDelayThread(16000);
                 }
             }
             else
             {
-               
+                break;
+            }
+        }
+
+        sceKernelDelayThread(16000);
+    }
+
+    sceKernelExitGame();
+
+    return 0;
+}
