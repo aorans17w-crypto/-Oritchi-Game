@@ -1,5 +1,6 @@
 #include <pspkernel.h>
 #include <pspdisplay.h>
+#include <pspdebug.h>
 #include <pspctrl.h>
 #include <pspgu.h>
 #include <pspgum.h>
@@ -13,20 +14,23 @@ PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
 
 static unsigned int __attribute__((aligned(16))) list[262144];
 
-typedef struct {
+typedef struct
+{
     float x;
     float y;
     float z;
 } Vertex;
 
-static Vertex floorVertices[4] = {
+static Vertex floorVertices[4] =
+{
     {-5.0f, 0.0f, -5.0f},
     { 5.0f, 0.0f, -5.0f},
     {-5.0f, 0.0f,  5.0f},
     { 5.0f, 0.0f,  5.0f}
 };
 
-static Vertex playerVertices[4] = {
+static Vertex playerVertices[4] =
+{
     {-0.4f, 0.0f, 0.0f},
     { 0.4f, 0.0f, 0.0f},
     {-0.4f, 1.0f, 0.0f},
@@ -43,52 +47,24 @@ void drawMenu(int selected)
     pspDebugScreenSetXY(15, 9);
 
     if (selected == 0)
+    {
         pspDebugScreenPrintf("> NEW GAME");
+    }
     else
+    {
         pspDebugScreenPrintf("  NEW GAME");
+    }
 
     pspDebugScreenSetXY(15, 11);
 
     if (selected == 1)
+    {
         pspDebugScreenPrintf("> EXIT");
+    }
     else
+    {
         pspDebugScreenPrintf("  EXIT");
-
-    pspDebugScreenSetXY(15, 17);
-    pspDebugScreenPrintf("UP / DOWN : SELECT");
-
-    pspDebugScreenSetXY(15, 18);
-    pspDebugScreenPrintf("X : CONFIRM");
-
-    sceDisplayWaitVblankStart();
-}
-    sceGuStart(GU_DIRECT, list);
-
-    sceGuClearColor(0xFF101018);
-    sceGuClear(GU_COLOR_BUFFER_BIT);
-
-    sceGuFinish();
-    sceGuSync(0, 0);
-
-    /*
-     * نستخدم debug screen فوق الخلفية
-     */
-    pspDebugScreenSetXY(15, 4);
-    pspDebugScreenPrintf("ORITCHI GAME");
-
-    pspDebugScreenSetXY(15, 9);
-
-    if (selected == 0)
-        pspDebugScreenPrintf("> NEW GAME");
-    else
-        pspDebugScreenPrintf("  NEW GAME");
-
-    pspDebugScreenSetXY(15, 11);
-
-    if (selected == 1)
-        pspDebugScreenPrintf("> EXIT");
-    else
-        pspDebugScreenPrintf("  EXIT");
+    }
 
     pspDebugScreenSetXY(15, 17);
     pspDebugScreenPrintf("UP / DOWN : SELECT");
@@ -103,6 +79,7 @@ void drawGame(float playerX, float playerZ)
 
     sceGuClearColor(0xFF202020);
     sceGuClearDepth(0);
+
     sceGuClear(
         GU_COLOR_BUFFER_BIT |
         GU_DEPTH_BUFFER_BIT
@@ -121,19 +98,22 @@ void drawGame(float playerX, float playerZ)
     sceGumMatrixMode(GU_VIEW);
     sceGumLoadIdentity();
 
-    ScePspFVector3 camera = {
+    ScePspFVector3 camera =
+    {
         0.0f,
         3.0f,
         -6.0f
     };
 
-    ScePspFVector3 target = {
+    ScePspFVector3 target =
+    {
         0.0f,
         0.0f,
         0.0f
     };
 
-    ScePspFVector3 up = {
+    ScePspFVector3 up =
+    {
         0.0f,
         1.0f,
         0.0f
@@ -148,10 +128,6 @@ void drawGame(float playerX, float playerZ)
     sceGumMatrixMode(GU_MODEL);
     sceGumLoadIdentity();
 
-    /*
-     * الأرضية
-     */
-
     sceGuColor(0xFF406040);
     sceGuDisable(GU_TEXTURE_2D);
 
@@ -163,13 +139,10 @@ void drawGame(float playerX, float playerZ)
         floorVertices
     );
 
-    /*
-     * اللاعب
-     */
-
     sceGumPushMatrix();
 
-    ScePspFVector3 player = {
+    ScePspFVector3 player =
+    {
         playerX,
         0.0f,
         playerZ
@@ -272,17 +245,17 @@ int main(void)
     {
         sceCtrlReadBufferPositive(&pad, 1);
 
-        /*
-         * القائمة الرئيسية
-         */
-
         if (!gameStarted)
         {
             if (pad.Buttons & PSP_CTRL_UP)
+            {
                 selected = 0;
+            }
 
             if (pad.Buttons & PSP_CTRL_DOWN)
+            {
                 selected = 1;
+            }
 
             if (pad.Buttons & PSP_CTRL_CROSS)
             {
@@ -300,32 +273,27 @@ int main(void)
 
             drawMenu(selected);
         }
-
-        /*
-         * اللعبة
-         */
-
         else
         {
-            /*
-             * تم إصلاح اتجاه اليمين واليسار هنا
-             */
-
             if (pad.Buttons & PSP_CTRL_LEFT)
+            {
                 playerX += 0.03f;
+            }
 
             if (pad.Buttons & PSP_CTRL_RIGHT)
+            {
                 playerX -= 0.03f;
+            }
 
             if (pad.Buttons & PSP_CTRL_UP)
+            {
                 playerZ += 0.03f;
+            }
 
             if (pad.Buttons & PSP_CTRL_DOWN)
+            {
                 playerZ -= 0.03f;
-
-            /*
-             * START يرجع إلى القائمة
-             */
+            }
 
             if (pad.Buttons & PSP_CTRL_START)
             {
