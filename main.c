@@ -2,6 +2,7 @@
 #include <pspctrl.h>
 
 #include "graphics.h"
+#include "scene.h"
 
 PSP_MODULE_INFO("Oritchi Game", 0, 1, 0);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
@@ -11,6 +12,7 @@ int main(void)
     SceCtrlData pad;
 
     graphicsInit();
+    sceneInit();
 
     while (1)
     {
@@ -21,7 +23,11 @@ int main(void)
             break;
         }
 
+        sceneUpdate(pad.Buttons);
+
         graphicsStartFrame();
+
+        sceneDraw();
 
         graphicsEndFrame();
 
