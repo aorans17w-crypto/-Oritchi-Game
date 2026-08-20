@@ -1,6 +1,6 @@
 TARGET = OritchiGame
 
-OBJS = main.o graphics.o
+OBJS = main.o graphics.o scene.o
 
 CFLAGS = -O2 -G0 -Wall
 CXXFLAGS = $(CFLAGS) -fno-exceptions -fno-rtti
