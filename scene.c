@@ -4,113 +4,361 @@
 
 #include "scene.h"
 
-/* موقع اللاعب */
-static float playerX = 0.0f;
-static float playerY = 0.0f;
+/*
+ * ORITCHI GAME
+ * Main Menu - PSP
+ *
+ * لا نستخدم صورًا أو ملفات خارجية في هذه المرحلة.
+ * الخط مرسوم مباشرة باستخدام أشكال بسيطة حتى
+ * يعمل المشروع بدون الحاجة إلى تحميل ملفات إضافية.
+ */
 
-/* تعريف رأس مثلث */
-typedef struct
+static int menuSelection = 0;
+
+/* ---------------------------------------------------------
+   معلومات الخط البسيط 5x7
+   --------------------------------------------------------- */
+
+static const unsigned char font_O[7] = {
+    0x0E, 0x11, 0x11, 0x11, 0x11, 0x11, 0x0E
+};
+
+static const unsigned char font_R[7] = {
+    0x1E, 0x11, 0x11, 0x1E, 0x14, 0x12, 0x11
+};
+
+static const unsigned char font_I[7] = {
+    0x1F, 0x04, 0x04, 0x04, 0x04, 0x04, 0x1F
+};
+
+static const unsigned char font_T[7] = {
+    0x1F, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04
+};
+
+static const unsigned char font_C[7] = {
+    0x0F, 0x10, 0x10, 0x10, 0x10, 0x10, 0x0F
+};
+
+static const unsigned char font_H[7] = {
+    0x11, 0x11, 0x11, 0x1F, 0x11, 0x11, 0x11
+};
+
+static const unsigned char font_G[7] = {
+    0x0E, 0x11, 0x10, 0x17, 0x11, 0x11, 0x0E
+};
+
+static const unsigned char font_A[7] = {
+    0x0E, 0x11, 0x11, 0x1F, 0x11, 0x11, 0x11
+};
+
+static const unsigned char font_M[7] = {
+    0x11, 0x1B, 0x15, 0x15, 0x11, 0x11, 0x11
+};
+
+static const unsigned char font_E[7] = {
+    0x1F, 0x10, 0x10, 0x1E, 0x10, 0x10, 0x1F
+};
+
+static const unsigned char font_S[7] = {
+    0x0F, 0x10, 0x10, 0x0E, 0x01, 0x01, 0x1E
+};
+
+static const unsigned char font_P[7] = {
+    0x1E, 0x11, 0x11, 0x1E, 0x10, 0x10, 0x10
+};
+
+static const unsigned char font_N[7] = {
+    0x11, 0x19, 0x15, 0x13, 0x11, 0x11, 0x11
+};
+
+static const unsigned char font_X[7] = {
+    0x11, 0x11, 0x0A, 0x04, 0x0A, 0x11, 0x11
+};
+
+static const unsigned char font_SPACE[7] = {
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+/* ---------------------------------------------------------
+   إرجاع شكل الحرف
+   --------------------------------------------------------- */
+
+static const unsigned char* getCharacter(char c)
 {
-    float x;
-    float y;
-    float z;
-    unsigned int color;
-} Vertex;
+    switch (c)
+    {
+        case 'O': return font_O;
+        case 'R': return font_R;
+        case 'I': return font_I;
+        case 'T': return font_T;
+        case 'C': return font_C;
+        case 'H': return font_H;
+        case 'G': return font_G;
+        case 'A': return font_A;
+        case 'M': return font_M;
+        case 'E': return font_E;
+        case 'S': return font_S;
+        case 'P': return font_P;
+        case 'N': return font_N;
+        case 'X': return font_X;
+        case ' ': return font_SPACE;
+        default:  return font_SPACE;
+    }
+}
 
-/* رسم مثلث */
-static void drawTriangle(
-    float x1, float y1,
-    float x2, float y2,
-    float x3, float y3,
+/* ---------------------------------------------------------
+   رسم حرف واحد
+   --------------------------------------------------------- */
+
+static void drawCharacter(
+    char character,
+    float x,
+    float y,
+    float scale,
     unsigned int color)
 {
-    Vertex vertices[3];
+    const unsigned char *glyph = getCharacter(character);
 
-    vertices[0].x = x1;
-    vertices[0].y = y1;
-    vertices[0].z = 0.0f;
-    vertices[0].color = color;
+    typedef struct
+    {
+        float x;
+        float y;
+        float z;
+        unsigned int color;
+    } Vertex;
 
-    vertices[1].x = x2;
-    vertices[1].y = y2;
-    vertices[1].z = 0.0f;
-    vertices[1].color = color;
+    Vertex vertices[35];
 
-    vertices[2].x = x3;
-    vertices[2].y = y3;
-    vertices[2].z = 0.0f;
-    vertices[2].color = color;
+    int count = 0;
+
+    int row;
+    int column;
+
+    for (row = 0; row < 7; row++)
+    {
+        for (column = 0; column < 5; column++)
+        {
+            if (glyph[row] & (1 << (4 - column)))
+            {
+                vertices[count].x = x + column * scale;
+                vertices[count].y = y + row * scale;
+                vertices[count].z = 0.0f;
+                vertices[count].color = color;
+
+                count++;
+            }
+        }
+    }
+
+    if (count == 0)
+        return;
 
     sceGuDisable(GU_TEXTURE_2D);
     sceGuShadeModel(GU_FLAT);
 
+    /*
+     * كل نقطة تمثل مربعًا صغيرًا.
+     * نستخدم GU_SPRITES، وكل زوج من الرؤوس يمثل مربعًا.
+     */
+
+    Vertex spriteVertices[70];
+
+    int spriteCount = 0;
+
+    for (row = 0; row < 7; row++)
+    {
+        for (column = 0; column < 5; column++)
+        {
+            if (glyph[row] & (1 << (4 - column)))
+            {
+                spriteVertices[spriteCount].x =
+                    x + column * scale;
+
+                spriteVertices[spriteCount].y =
+                    y + row * scale;
+
+                spriteVertices[spriteCount].z = 0.0f;
+                spriteVertices[spriteCount].color = color;
+
+                spriteCount++;
+
+                spriteVertices[spriteCount].x =
+                    x + column * scale + scale;
+
+                spriteVertices[spriteCount].y =
+                    y + row * scale + scale;
+
+                spriteVertices[spriteCount].z = 0.0f;
+                spriteVertices[spriteCount].color = color;
+
+                spriteCount++;
+            }
+        }
+    }
+
     sceGuDrawArray(
-        GU_TRIANGLES,
+        GU_SPRITES,
         GU_COLOR_8888 |
         GU_VERTEX_32BITF |
         GU_TRANSFORM_2D,
-        3,
+        spriteCount,
         NULL,
-        vertices
+        spriteVertices
     );
 }
 
+/* ---------------------------------------------------------
+   رسم كلمة
+   --------------------------------------------------------- */
+
+static void drawText(
+    const char *text,
+    float x,
+    float y,
+    float scale,
+    unsigned int color)
+{
+    float currentX = x;
+
+    while (*text)
+    {
+        drawCharacter(
+            *text,
+            currentX,
+            y,
+            scale,
+            color
+        );
+
+        currentX += scale * 6.0f;
+
+        text++;
+    }
+}
+
+/* ---------------------------------------------------------
+   تهيئة المشهد
+   --------------------------------------------------------- */
+
 void sceneInit(void)
 {
-    playerX = 0.0f;
-    playerY = 0.0f;
+    menuSelection = 0;
 }
+
+/* ---------------------------------------------------------
+   التحكم بالقائمة
+   --------------------------------------------------------- */
 
 void sceneUpdate(unsigned int buttons)
 {
-    const float speed = 2.0f;
+    static unsigned int oldButtons = 0;
 
-    if (buttons & PSP_CTRL_LEFT)
-        playerX -= speed;
+    unsigned int pressed =
+        buttons & ~oldButtons;
 
-    if (buttons & PSP_CTRL_RIGHT)
-        playerX += speed;
+    if (pressed & PSP_CTRL_UP)
+    {
+        menuSelection--;
 
-    if (buttons & PSP_CTRL_UP)
-        playerY -= speed;
+        if (menuSelection < 0)
+            menuSelection = 2;
+    }
 
-    if (buttons & PSP_CTRL_DOWN)
-        playerY += speed;
+    if (pressed & PSP_CTRL_DOWN)
+    {
+        menuSelection++;
 
-    /* حدود الحركة */
-    if (playerX < -220.0f)
-        playerX = -220.0f;
+        if (menuSelection > 2)
+            menuSelection = 0;
+    }
 
-    if (playerX > 220.0f)
-        playerX = 220.0f;
+    /*
+     * X حاليًا لا يبدأ اللعبة بعد.
+     * سنربطه بمشهد الهروب في الخطوة التالية.
+     */
 
-    if (playerY < -120.0f)
-        playerY = -120.0f;
-
-    if (playerY > 120.0f)
-        playerY = 120.0f;
+    oldButtons = buttons;
 }
+
+/* ---------------------------------------------------------
+   رسم القائمة الرئيسية
+   --------------------------------------------------------- */
 
 void sceneDraw(void)
 {
     /*
-     * شخصية مؤقتة:
-     * مثلث يمثل أوريتشي.
+     * العنوان
      */
 
-    drawTriangle(
-        playerX,
-        playerY - 25.0f,
-
-        playerX - 18.0f,
-        playerY + 20.0f,
-
-        playerX + 18.0f,
-        playerY + 20.0f,
-
+    drawText(
+        "ORITCHI",
+        -105.0f,
+        -105.0f,
+        5.0f,
         0xFFFFFFFF
     );
+
+    drawText(
+        "GAME",
+        -60.0f,
+        -60.0f,
+        5.0f,
+        0xFFFFFFFF
+    );
+
+    /*
+     * خيارات القائمة
+     */
+
+    unsigned int normalColor = 0xFFBBBBBB;
+    unsigned int selectedColor = 0xFFFFFFFF;
+
+    drawText(
+        "START GAME",
+        -105.0f,
+        5.0f,
+        3.0f,
+        menuSelection == 0
+            ? selectedColor
+            : normalColor
+    );
+
+    drawText(
+        "OPTIONS",
+        -105.0f,
+        35.0f,
+        3.0f,
+        menuSelection == 1
+            ? selectedColor
+            : normalColor
+    );
+
+    drawText(
+        "EXIT",
+        -105.0f,
+        65.0f,
+        3.0f,
+        menuSelection == 2
+            ? selectedColor
+            : normalColor
+    );
+
+    /*
+     * تعليمات التحكم
+     */
+
+    drawText(
+        "PRESS X",
+        -75.0f,
+        105.0f,
+        2.5f,
+        0xFF888888
+    );
 }
+
+/* ---------------------------------------------------------
+   هل انتهى المشهد؟
+   --------------------------------------------------------- */
 
 int sceneIsFinished(void)
 {
