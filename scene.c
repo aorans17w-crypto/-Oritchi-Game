@@ -29,7 +29,6 @@ void sceneUpdate(unsigned int buttons)
     if (buttons & PSP_CTRL_DOWN)
         playerY += speed;
 
-    /* حدود الشاشة */
     if (playerX < -220.0f)
         playerX = -220.0f;
 
@@ -45,7 +44,6 @@ void sceneUpdate(unsigned int buttons)
 
 void sceneDraw(void)
 {
-    /* سنضع الرسم الحقيقي للشخصية والبيئة هنا لاحقًا */
 }
 
 int sceneIsFinished(void)
